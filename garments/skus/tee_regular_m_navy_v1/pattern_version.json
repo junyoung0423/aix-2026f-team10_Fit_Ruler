@@ -1,0 +1,80 @@
+{
+  "pattern_version": "tee_regular_m_navy_v1.pattern.0.1.0-draft",
+  "garment_id": "tee_regular_m_navy_v1",
+  "status": "FIT_FAILED",
+  "status_reason": "shoulder_width_cm: 패턴 34.457 cm, 목표 46.0 cm, 오차 -11.543 cm > 1.0 cm. GarmentCode 티셔츠의 어깨점은 패턴 생성용 몸의 shoulder_w로만 정해져(sleeves.py: (shoulder_w - 2)/2) 디자인 파라미터로 바꿀 수 없다. 몸은 mean_all 고정 조건.",
+  "targets_are_placeholder": true,
+  "targets_source": "PLACEHOLDER: 명세서 4장 예시값. 실물 티셔츠 실측으로 교체 필요",
+  "regenerate_per_user": false,
+  "note": "이 패턴은 사용자마다 다시 생성하지 않는다(R06, C0 규칙 1). 다른 몸에는 이 패턴 파일을 그대로 다시 배치하고 착장한다.",
+  "generator": {
+    "library": "GarmentCode (pygarment)",
+    "pygarment_version": "2.0.2",
+    "garmentcode_commit": "d449629979028123a5c4dc9e732a2ec19b7fce31",
+    "repo": "https://github.com/maria-korosteleva/GarmentCode",
+    "license": "MIT (전문: pipelines/garment/fixtures/tee_gc_default/SOURCE.md)",
+    "program": "assets.garment_programs.meta_garment.MetaGarment(\"t-shirt\", BodyParameters(body_mean_all.yaml), design.yaml)"
+  },
+  "pattern_generation_body": {
+    "file": "body_mean_all.yaml",
+    "kind": "GarmentCode mean_all (패턴 생성용 고정 몸. 사용자 몸 아님, D의 T07 아님)"
+  },
+  "files": {
+    "body_mean_all.yaml": "fc78250c24f7f40d10ac6e60a1af37deb24bd8439c1109be701ad255b28819eb",
+    "design.yaml": "5ac9c363c12871858c213a4321b313f09c43f1ead132dc550237f96dbe6c0fa8",
+    "pattern_pattern.svg": "8772d98eb9feb9c40edc475b14d330a01425d822dae331ad9186dc47f4cc8876",
+    "pattern_specification.json": "2d935829ccd45ea55e85af8eafccb0f83dd50b751a487ed7c5071cbf0d96dacc"
+  },
+  "pattern_canonical_sha256": "b1b3145435e6a05559a1e56f62792506083b000db0d218e8f1c38d4b970218f8",
+  "pattern_canonical_note": "GarmentCode는 같은 입력에서도 패널·봉제선 저장 순서가 바뀔 수 있다. 다시 생성해 확인할 때는 canonical sha256(pattern_measure.canonical_sha256)을 비교한다.",
+  "fitted_design_params": {
+    "shirt.width": 1.0817236315022316,
+    "shirt.length": 1.7342191259152897,
+    "sleeve.length": 0.296956000926622
+  },
+  "default_design_params": {
+    "shirt.width": 1.05,
+    "shirt.length": 1.2,
+    "sleeve.length": 0.3
+  },
+  "pattern_measurements_cm": {
+    "chest_girth_cm": 108.0,
+    "shoulder_width_cm": 34.457,
+    "sleeve_length_cm": 22.0,
+    "body_length_cm": 70.0
+  },
+  "targets_cm": {
+    "chest_girth_cm": 108.0,
+    "shoulder_width_cm": 46.0,
+    "sleeve_length_cm": 22.0,
+    "body_length_cm": 70.0,
+    "waist_girth_cm": null
+  },
+  "errors_cm": {
+    "chest_girth_cm": 0.0,
+    "shoulder_width_cm": -11.543,
+    "sleeve_length_cm": 0.0,
+    "body_length_cm": 0.0
+  },
+  "tolerance_cm": 1.0,
+  "within_tolerance": {
+    "chest_girth_cm": true,
+    "shoulder_width_cm": false,
+    "sleeve_length_cm": true,
+    "body_length_cm": true
+  },
+  "waist_girth_cm": {
+    "value": null,
+    "reason": "target null (WAIST_POSITION_UNVERIFIED)"
+  },
+  "self_intersecting": false,
+  "measurement_protocol": "garment_measure_v0 + pattern 정의 (review C3.md, pipelines/garment/pattern_measure.py)",
+  "fit_config": {
+    "path": "pipelines/garment/configs/pattern_fit_v0.json",
+    "sha256": "ad489b44ab89bd9f4c8e51d3f172f417da93af94a20a837abc3223d52f8c2ef3",
+    "name": "pattern_fit_v0",
+    "version": "0.1.0"
+  },
+  "targets_json_sha256": "cdd1e8e7606e891a0340aabe41e72c0854ac5f4c93f22094b647851873be07f1",
+  "created": "2026-11-05"
+}
