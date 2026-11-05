@@ -100,6 +100,9 @@ def evaluate(rest, faces, cur, stitch_pairs, disp_hist, signed_dist, body_closed
         'stretch_max': round(float(stretch.max()), 3),
         'stretch_p99': round(float(np.percentile(stretch, 99)), 3),
         'stretch_ok': float(stretch.max()) <= th['stretch_ratio_max'],
+        # 진단용(명세서 기준 없음): 변 압축(현재/패턴 < 1)
+        'stretch_min': round(float(stretch.min()), 3),
+        'stretch_p01': round(float(np.percentile(stretch, 1)), 3),
         'nan': has_nan,
         'seam_gap_max_mm': round(float(gap.max()) * 1000, 2),
         'seam_gap_median_mm': round(float(np.median(gap)) * 1000, 2),
@@ -119,6 +122,38 @@ def evaluate(rest, faces, cur, stitch_pairs, disp_hist, signed_dist, body_closed
         result['seam_closed_ok'] = float(gap.max()) <= th['seam_gap_max_m']
         result['drape_ok'] = result['drape_ok'] and result['seam_closed_ok']
     return result
+
+
+def free_edge_vertices(panels, kind):
+    """export가 남긴 패널 모서리 정보에서 자유(봉제 안 된) 모서리 정점.
+    kind='hem': 몸판(torso)의 자유 모서리 중 라벨에 collar가 없는 것, 'cuff': 소매(sleeve) 패널의 자유 모서리."""
+    idx = set()
+    for p in panels:
+        if 'edges' not in p:
+            return None
+        is_torso, is_sleeve = 'torso' in p['name'], 'sleeve' in p['name']
+        for e in p['edges']:
+            if e['stitched']:
+                continue
+            if kind == 'hem' and is_torso and 'collar' not in (e['label'] or ''):
+                idx.update(e['vertices'])
+            if kind == 'cuff' and is_sleeve:
+                idx.update(e['vertices'])
+    return sorted(idx)
+
+
+def gravity_response(co_ref, co, hem_idx, cuff_idx):
+    """기준 프레임(용접 직후) 대비 최종 좌표의 변화(mm). 진단용, 판정에 쓰지 않는다."""
+    co_ref, co = np.asarray(co_ref, float), np.asarray(co, float)
+    d = np.linalg.norm(co - co_ref, axis=1)
+    out = {'disp_median_mm': round(float(np.median(d)) * 1000, 3),
+           'disp_p90_mm': round(float(np.percentile(d, 90)) * 1000, 3),
+           'garment_min_z_change_mm': round(float(co[:, 2].min() - co_ref[:, 2].min()) * 1000, 3)}
+    if hem_idx:
+        out['hem_min_z_change_mm'] = round(float(co[hem_idx, 2].min() - co_ref[hem_idx, 2].min()) * 1000, 3)
+    if cuff_idx:
+        out['sleeve_end_mean_z_change_mm'] = round(float(co[cuff_idx, 2].mean() - co_ref[cuff_idx, 2].mean()) * 1000, 3)
+    return out
 
 
 def per_panel_stretch(rest, faces, cur, panel_of_vertex, panel_names, limit):

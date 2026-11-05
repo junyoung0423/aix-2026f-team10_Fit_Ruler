@@ -15,7 +15,9 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import drape_measure  # noqa: E402
 import metrics  # noqa: E402
+import pattern_measure  # noqa: E402
 from drape_config import load_config  # noqa: E402
 
 COMPARED_KEYS = ('stable_last10_median_mm', 'stable_ok', 'penetration_area_ratio', 'penetration_ok',
@@ -51,8 +53,10 @@ def analyze(run_dir, config_path=None):
     panels, worst = metrics.per_panel_stretch(rest, g['faces'], co, g['panel_of_vertex'], names,
                                               th['stretch_ratio_max'])
     stitches = metrics.per_stitch_gap(co, g['stitch_pairs'], g['panel_of_vertex'], names)
+    draped = draped_measurements(run_dir, data, co)
     out = {
         'config': cfg_rec,
+        'draped_measurements': draped,
         'offline_metrics': offline,
         'matches_blender_metrics': not mismatch,
         'mismatch': mismatch,
@@ -62,6 +66,33 @@ def analyze(run_dir, config_path=None):
     }
     (run_dir / 'analysis.json').write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding='utf-8')
     return out
+
+
+def draped_measurements(run_dir, data, co):
+    """패턴 측정선을 착장 메시에서 다시 잰다(진단용). 패턴 값, 휴지(패턴) 좌표로 잰 값(자체 검산),
+    기준 프레임(용접 직후) 값, 최종 값을 나란히 둔다."""
+    g = data['garment']
+    spec_path = Path(data['source']['garment_spec'])
+    if 'uv_cm' not in g or not spec_path.exists():
+        return None
+    spec = json.loads(spec_path.read_text(encoding='utf-8'))
+    pattern, pdetail = pattern_measure.measure(spec)
+    lm = pdetail['landmarks']
+    res = {'pattern_cm': pattern,
+           'rest_layout_cm': drape_measure.measure_draped(g, lm, np.asarray(g['vertices']))[0]}
+    ref = run_dir / 'garment_ref_co.npy'
+    if ref.exists():
+        res['reference_frame_cm'] = drape_measure.measure_draped(g, lm, np.load(ref))[0]
+    final, fdetail = drape_measure.measure_draped(g, lm, co)
+    res['final_cm'] = final
+    res['final_detail'] = fdetail
+    res['final_minus_pattern_cm'] = {
+        'chest_girth': round(final['chest_girth_surface_cm'] - pattern['chest_girth_cm'], 3),
+        'body_length_surface': round(final['body_length_surface_cm'] - pattern['body_length_cm'], 3),
+        'body_length_z_drop': round(final['body_length_z_drop_cm'] - pattern['body_length_cm'], 3),
+        'shoulder_width_straight_3d': round(final['shoulder_width_straight_3d_cm'] - pattern['shoulder_width_cm'], 3),
+    }
+    return res
 
 
 def main():

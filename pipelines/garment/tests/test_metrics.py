@@ -137,3 +137,24 @@ def test_seam_closure_weld_rule_uses_preweld_gap():
 def test_v0_has_no_seam_rule():
     r = run(REST, pairs=[(0, 1, 0)])
     assert 'seam_closed_ok' not in r and r['drape_ok']
+
+
+def test_compression_and_gravity_response():
+    r = run(REST * np.array([0.5, 1.0, 1.0]))
+    assert r['stretch_min'] == 0.5 and r['stretch_p01'] <= 0.6
+    ref = REST.copy()
+    cur = REST - [0, 0, 0.01]
+    g = metrics.gravity_response(ref, cur, [0, 1], [2])
+    assert g['disp_median_mm'] == 10.0 and g['hem_min_z_change_mm'] == -10.0
+    assert g['sleeve_end_mean_z_change_mm'] == -10.0
+
+
+def test_free_edge_vertices():
+    panels = [{'name': 'left_ftorso', 'edges': [
+                  {'index': 0, 'label': '', 'vertices': [0, 1], 'stitched': False},
+                  {'index': 1, 'label': 'left_collar', 'vertices': [2, 3], 'stitched': False},
+                  {'index': 2, 'label': '', 'vertices': [3, 4], 'stitched': True}]},
+              {'name': 'left_sleeve_f', 'edges': [{'index': 0, 'label': '', 'vertices': [5, 6], 'stitched': False}]}]
+    assert metrics.free_edge_vertices(panels, 'hem') == [0, 1]
+    assert metrics.free_edge_vertices(panels, 'cuff') == [5, 6]
+    assert metrics.free_edge_vertices([{'name': 'x'}], 'hem') is None

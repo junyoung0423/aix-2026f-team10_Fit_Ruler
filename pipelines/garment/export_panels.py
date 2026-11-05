@@ -47,7 +47,7 @@ def export_garment(spec_path, res):
     box.load_panels()
     box.gen_panel_meshes()
 
-    verts, faces, panel_of_vert, panels = [], [], [], []
+    verts, faces, panel_of_vert, panels, uv = [], [], [], [], []
     offsets = {}
     offset = 0
     for name in box.panelNames:
@@ -57,11 +57,20 @@ def export_garment(spec_path, res):
         offsets[name] = offset
         verts.append(v)
         faces.append(f + offset)
+        uv.append(np.asarray(panel.panel_vertices, dtype=float)[:, :2])  # 패널 안 2D 좌표(cm), 착장 후 측정용
         panel_of_vert += [len(panels)] * len(v)
-        panels.append({'name': name, 'n_verts': len(v), 'n_faces': len(f)})
+        # 모서리별 정점(전역 번호)과 라벨: 밑단·소매단 같은 자유 모서리를 찾는 데 쓴다(시뮬레이션에는 안 씀)
+        edges = [{'index': i, 'label': e.label, 'vertices': [int(offset + k) for k in e.vertex_range]}
+                 for i, e in enumerate(panel.edges)]
+        panels.append({'name': name, 'n_verts': len(v), 'n_faces': len(f), 'edges': edges})
         offset += len(v)
+    stitched = {(st.panel_1, st.edge_1) for st in box.stitches} | {(st.panel_2, st.edge_2) for st in box.stitches}
+    for p in panels:
+        for e in p['edges']:
+            e['stitched'] = (p['name'], e['index']) in stitched
 
     stitch_pairs = collect_stitch_pairs(box, offsets)
+    box.uv_cm = np.concatenate(uv)
     verts = to_spec(np.concatenate(verts), GARMENT_SCALE)
     faces = np.concatenate(faces)
     return box, verts, faces, panel_of_vert, panels, stitch_pairs
@@ -102,6 +111,7 @@ def main():
             'panels': panels,
             'n_stitches': len(box.stitches),
             'stitch_pairs': pairs,
+            'uv_cm': box.uv_cm.round(6).tolist(),
         },
         'body': {
             'vertices': bv.round(6).tolist(),

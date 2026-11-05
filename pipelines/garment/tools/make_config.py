@@ -25,13 +25,20 @@ def main():
     ap.add_argument('--version', required=True)
     ap.add_argument('--description', required=True)
     ap.add_argument('--set', action='append', default=[], metavar='KEY=JSON')
+    ap.add_argument('--unset', action='append', default=[], metavar='KEY')
     args = ap.parse_args()
 
     base_path = Path(args.base)
     cfg = json.loads(base_path.read_text(encoding='utf-8'))
     parent = {'name': cfg['name'], 'version': cfg['version'], 'file': base_path.name}
     cfg.update(name=args.name, version=args.version, status='experiment', description=args.description,
-               parent=parent, changes=args.set)
+               parent=parent, changes=args.set + [f'unset {k}' for k in args.unset])
+    for key in args.unset:
+        keys = key.split('.')
+        d = cfg
+        for k in keys[:-1]:
+            d = d[k]
+        del d[keys[-1]]
     for item in args.set:
         key, val = item.split('=', 1)
         set_path(cfg, key, json.loads(val))

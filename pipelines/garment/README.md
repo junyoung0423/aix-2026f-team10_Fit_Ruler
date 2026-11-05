@@ -1,7 +1,12 @@
 # pipelines/garment — 의류 준비·착장 (C 담당, 초안)
 
 GarmentCode 패턴을 패널 + 봉제선 쌍으로 내보내고, Blender cloth로 기준 몸에 착장한 뒤
-명세서 6장 검사(안정·침투·신장·NaN)를 한다. 상태: **초안(C2)**. 기본 설정은 `configs/drape_v1.json`. 모든 수치 기준은 명세서의
+명세서 6장 검사(안정·침투·신장·NaN)를 한다. 상태: **초안(C3)**. 기본 설정은 `configs/drape_v1.json`(status draft).
+SKU 고정 패턴은 `garments/skus/<sku>/`에 있다(C3, `pattern_fit.py`).
+
+> **drape_v1 주의**: 용접 뒤 질량이 면밀도 기준(옷 전체 약 0.10 kg)이라 천 강성 대비 매우 가볍다.
+> 중력이 켜진 뒤 움직임이 거의 없어(이동량 중앙값 0.9 mm, 밑단 −0.5 mm) **중력 처짐·실루엣은 검증 전**이다.
+> 질량·강성 조정은 C3 범위가 아니어서 바꾸지 않았다. 모든 수치 기준은 명세서의
 **초기 검증값**이며 검증된 성능이 아니다.
 
 ## 환경 (이미 설치됨)
@@ -55,6 +60,10 @@ C:\dev\venvs\garmentcode\Scripts\python.exe C:\dev\FIT_RULER-c\pipelines\garment
 | `export_panels.py` | GarmentCode 패턴 → 패널 메시 + 봉제 쌍 → `drape_input.json` |
 | `blender_drape.py` | Blender 봉제·착장·검사·저장 |
 | `analyze_drape.py` | 같은 메시로 지표 재계산(Blender 결과와 비교), 패널·봉제선별 요약 |
+| `pattern_measure.py` | 패턴 JSON에서 가슴·어깨·소매·기장 측정 (svgpathtools, GarmentCode 불필요), 정규형 sha256 |
+| `pattern_fit.py` | 디자인 파라미터를 목표 실측에 맞춤(`fit`), 민감도(`sensitivity`), 고정 패턴 생성(`generate`). GarmentCode 필요 |
+| `configs/pattern_fit_v0.json` | 패턴 최적화 설정(몸 mean_all 고정, 맞출 파라미터, 허용 오차 1.0 cm) |
+| `drape_measure.py` | 패턴 측정선을 착장 메시에서 다시 잼(진단용) |
 | `weld.py` | 봉제 쌍 용접 대응표, 패턴 길이 이완 형상, 휴지 길이 편차 (순수 numpy) |
 | `run_drape.py` | 위 셋을 묶는 실행 래퍼, `run_summary.json` |
 | `tools/make_config.py` | 기존 설정에서 값 하나만 바꾼 실험 설정 만들기 |
@@ -97,6 +106,7 @@ C:\dev\venvs\garmentcode\Scripts\python.exe C:\dev\FIT_RULER-c\pipelines\garment
 | `drape.blend` | 착장 장면 |
 | `garment_draped.obj` | 착장된 옷 (Z 위, 6자리 반올림) |
 | `garment_draped_co.npy` | 착장된 옷 정점 좌표 (float64 원값, 재계산·결정성 비교용) |
+| `garment_ref_co.npy` | 중력 반응 기준 프레임(용접 직후) 좌표 |
 | `drape_trace.json` | 프레임별 이동량 중앙값, 최종 면 중심 부호 거리 |
 | `drape_metrics.json` | 착장 검사 결과 + `error_code`, 설정 기록, 프레임·시간 |
 | `analysis.json` | Blender 없이 다시 계산한 지표, 일치 여부, 패널·봉제선별 요약 |
@@ -106,6 +116,12 @@ C:\dev\venvs\garmentcode\Scripts\python.exe C:\dev\FIT_RULER-c\pipelines\garment
 오류 코드(명세서 12장): export 실패 `GARMENT_NOT_READY`, 검사 실패·착장 10분 초과 `DRAPE_INVALID`.
 
 ## 알려진 문제
+
+- (C3) SKU 고정 패턴(기장 70 cm)은 drape_v1에서 프레임 80의 용접 전 벌어짐이 12.59 mm(기준 10 mm)라 용접하지 않고 `DRAPE_INVALID`.
+  봉제 구간의 벌어짐이 6.5–13 mm로 흔들려 고정 프레임(80) 용접이 운에 좌우된다.
+- (C3) SKU 패턴은 어깨너비를 맞추지 못했다(34.46 vs 목표 46.0 cm). GarmentCode 티셔츠 어깨점이 몸 shoulder_w로만 정해진다.
+- (C3) GarmentCode는 같은 입력에서도 패턴 JSON의 패널·봉제선 저장 순서가 바뀔 수 있다. 같은 패턴인지는 `canonical_sha256`으로 본다.
+- 착장 후 기장의 높이(Z) 차는 어깨를 넘어가는 경로 때문에 평면 기장보다 짧다(기본 패턴 −8.7 cm). 천 위 길이는 패턴과 같다(+0.3 cm).
 
 - drape_v1 최대 신장 1.454로 기준 1.5에 여유가 작다. 최대 변은 어깨 꼭대기의 짧은 변(휴지 6.1 mm, 봉제선 3·10번 0.6 cm).
   Blender 천 스프링 강성은 변 길이로 보정되지 않아 짧은 변이 같은 힘에 더 크게(비율로) 늘어난다.

@@ -180,6 +180,7 @@ def simulate(garment, cfg, max_frames, g):
     wcfg = cfg.get('weld', {'enabled': False})
     weld_rec = {'enabled': bool(wcfg['enabled'])}
     vmap = None
+    co_ref, ref_frame = None, None  # 중력 반응 진단 기준(용접 직후, 용접 없으면 봉제 끝 프레임)
     prev = None
     disp_hist, diag = [], {'stretch_max': [], 'seam_gap_max_m': []}
     t0 = time.time()
@@ -203,8 +204,11 @@ def simulate(garment, cfg, max_frames, g):
             bpy.data.objects.remove(garment, do_unlink=True)
             garment = welded
             scene.frame_set(f)
+            co_ref, ref_frame = evaluated_coords(garment)[vmap], f
             print(f'welded at frame {f}: preweld gap max {pre.max() * 1000:.2f} mm, '
                   f'rest length ratio {rec["rest_length_ratio_used"]}', flush=True)
+        if co_ref is None and not wcfg['enabled'] and f == sch['sew_frames']:
+            co_ref, ref_frame = co, f
         if prev is not None:
             disp_hist.append(metrics.frame_displacement_median(prev, co))
         prev = co
@@ -217,6 +221,7 @@ def simulate(garment, cfg, max_frames, g):
         if f >= sch['sew_frames'] + sch['min_frames_after_sew'] and len(disp_hist) >= window:
             if metrics.stable_median(disp_hist, window) <= th['stable_median_m_per_frame']:
                 break
+    weld_rec['_co_ref'], weld_rec['_ref_frame'] = co_ref, ref_frame
     return prev, disp_hist, last, time.time() - t0, diag, garment, weld_rec
 
 
@@ -282,6 +287,7 @@ def main():
     co, disp_hist, last_frame, sim_s, diag, garment, weld_rec = simulate(garment, cfg, max_frames, g)
     sd = signed_distances(bvh, metrics.face_centers(co, tris))
     preweld = weld_rec.pop('preweld_gaps_m', None)
+    co_ref, ref_frame = weld_rec.pop('_co_ref'), weld_rec.pop('_ref_frame')
     result = metrics.evaluate(rest, g['faces'], co, g['stitch_pairs'], disp_hist, sd,
                               body['is_watertight'], th, preweld_gaps=preweld)
     if weld_rec['enabled']:
@@ -313,6 +319,10 @@ def main():
         'garment_total_mass_kg': round(phase_mass(cfg, g, n_sim_verts, 'n_welded_verts' in weld_rec)
                                        * n_sim_verts, 4),  # 마지막 단계 기준
         'weld': weld_rec,
+        'gravity_response': None if co_ref is None else dict(
+            reference_frame=ref_frame, note='진단용 기록. 판정에 쓰지 않음',
+            **metrics.gravity_response(co_ref, co, metrics.free_edge_vertices(g['panels'], 'hem'),
+                                       metrics.free_edge_vertices(g['panels'], 'cuff'))),
         'config': cfg_rec,
         'drape_input_sha256': sha256_file(in_path),
         'body_is_watertight': body['is_watertight'],
@@ -320,6 +330,8 @@ def main():
     print(json.dumps(result, indent=2), flush=True)
 
     np.save(out_dir / 'garment_draped_co.npy', co)
+    if co_ref is not None:
+        np.save(out_dir / 'garment_ref_co.npy', co_ref)
     (out_dir / 'drape_trace.json').write_text(json.dumps(
         {'disp_median_m_per_frame': disp_hist, 'signed_dist_m': sd.tolist(),
          'stretch_max_per_frame': diag['stretch_max'], 'seam_gap_max_m_per_frame': diag['seam_gap_max_m'],
