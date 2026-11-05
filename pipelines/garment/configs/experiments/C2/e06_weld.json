@@ -1,0 +1,105 @@
+{
+  "name": "drape_c2_e06",
+  "version": "0.2.0-e06",
+  "status": "experiment",
+  "description": "e03 대비 2단계 용접 켬: 봉제 80프레임 뒤 용접(용접 전 최대 10 mm 이하일 때만), 휴지 형상 = 패턴 길이 이완 형상",
+  "thresholds": {
+    "_note": "명세서 6장 초기 검증값. 검증된 성능이 아니며 완화하지 않는다.",
+    "max_frames": 300,
+    "stable_window_frames": 10,
+    "stable_median_m_per_frame": 0.001,
+    "penetration_depth_m": 0.003,
+    "penetration_area_ratio_max": 0.01,
+    "stretch_ratio_max": 1.5,
+    "seam_gap_max_m": 0.002,
+    "seam_gap_preweld_max_m": 0.01
+  },
+  "time_limits_s": {
+    "_note": "명세서 12장 단계 시간 제한(초기 목표). 착장 10분.",
+    "drape": 600
+  },
+  "export": {
+    "mesh_resolution_cm": 2.0
+  },
+  "schedule": {
+    "_note": "sew_frames까지 중력 0으로 봉제만 하고, gravity_ramp_frames 동안 중력을 1로 올린다. 안정 판정은 sew_frames + min_frames_after_sew 이후부터.",
+    "sew_frames": 80,
+    "gravity_ramp_frames": 5,
+    "min_frames_after_sew": 30
+  },
+  "cloth": {
+    "_note": "Blender Cotton 프리셋 계열 값. 면 저지 실제 물성을 재현한 값이 아니다(명세서 6장 주의).",
+    "preset": "blender_cotton_like_v0",
+    "quality": 12,
+    "mass": 0.3,
+    "air_damping": 1.0,
+    "tension_stiffness": 15.0,
+    "compression_stiffness": 15.0,
+    "shear_stiffness": 15.0,
+    "bending_stiffness": 0.5,
+    "use_sewing_springs": true,
+    "sewing_force_max": 0.0
+  },
+  "cloth_collision": {
+    "collision_quality": 4,
+    "distance_min": 0.003,
+    "use_self_collision": true,
+    "self_distance_min": 0.0015,
+    "self_friction": 5.0
+  },
+  "body_collision": {
+    "thickness_outer": 0.002,
+    "cloth_friction": 5.0
+  },
+  "preview": {
+    "_note": "착장 확인용 정면 PNG 한 장. 명세서 6장 렌더 클립(조명·색 관리 고정, 마스크, 깊이)이 아니다.",
+    "engine": "BLENDER_WORKBENCH",
+    "resolution": [
+      768,
+      1024
+    ],
+    "camera_location_m": [
+      0.0,
+      -4.2,
+      1.05
+    ],
+    "camera_rotation_deg": [
+      90.0,
+      0.0,
+      0.0
+    ],
+    "camera_lens_mm": 50.0,
+    "background_rgb": [
+      0.9,
+      0.9,
+      0.9
+    ],
+    "garment_rgba": [
+      0.12,
+      0.17,
+      0.35,
+      1.0
+    ],
+    "body_rgba": [
+      0.75,
+      0.72,
+      0.68,
+      1.0
+    ]
+  },
+  "parent": {
+    "name": "drape_c2_e03",
+    "version": "0.2.0-e03",
+    "file": "e03_selfdist15.json"
+  },
+  "changes": [
+    "weld={\"enabled\": true, \"at_frame\": 80, \"relax_iterations\": 10000, \"relax_step\": 1.0}",
+    "thresholds.seam_gap_preweld_max_m=0.010"
+  ],
+  "weld": {
+    "enabled": true,
+    "at_frame": 80,
+    "relax_iterations": 10000,
+    "relax_step": 1.0
+  }
+}
