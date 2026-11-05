@@ -1,7 +1,7 @@
 # pipelines/garment — 의류 준비·착장 (C 담당, 초안)
 
 GarmentCode 패턴을 패널 + 봉제선 쌍으로 내보내고, Blender cloth로 기준 몸에 착장한 뒤
-명세서 6장 검사(안정·침투·신장·NaN)를 한다. 상태: **초안(C1)**. 모든 수치 기준은 명세서의
+명세서 6장 검사(안정·침투·신장·NaN)를 한다. 상태: **초안(C2)**. 기본 설정은 `configs/drape_v1.json`. 모든 수치 기준은 명세서의
 **초기 검증값**이며 검증된 성능이 아니다.
 
 ## 환경 (이미 설치됨)
@@ -27,7 +27,7 @@ C:\dev\venvs\garmentcode\Scripts\python.exe -m pytest pipelines\garment\tests -q
 C:\dev\venvs\garmentcode\Scripts\python.exe pipelines\garment\run_drape.py `
   --spec pipelines\garment\fixtures\tee_gc_default\t-shirt__261103-16-24-09_specification.json `
   --body C:\dev\GarmentCode\assets\bodies\mean_all.obj `
-  --config pipelines\garment\configs\drape_v0.json --name tee_base
+  --config pipelines\garment\configs\drape_v1.json --name tee_v1
 ```
 
 옵션: `--out-root` (기본 `C:\dev\fitruler_c\runs\C1`), `--max-frames N` (짧은 시험용, 설정의 300 이하만),
@@ -55,13 +55,31 @@ C:\dev\venvs\garmentcode\Scripts\python.exe C:\dev\FIT_RULER-c\pipelines\garment
 | `export_panels.py` | GarmentCode 패턴 → 패널 메시 + 봉제 쌍 → `drape_input.json` |
 | `blender_drape.py` | Blender 봉제·착장·검사·저장 |
 | `analyze_drape.py` | 같은 메시로 지표 재계산(Blender 결과와 비교), 패널·봉제선별 요약 |
+| `weld.py` | 봉제 쌍 용접 대응표, 패턴 길이 이완 형상, 휴지 길이 편차 (순수 numpy) |
 | `run_drape.py` | 위 셋을 묶는 실행 래퍼, `run_summary.json` |
-| `configs/drape_v0.json` | 시뮬레이션·재질·충돌·봉제 일정·검사 기준(thresholds)·시간 제한. 버전 고정 |
+| `tools/make_config.py` | 기존 설정에서 값 하나만 바꾼 실험 설정 만들기 |
+| `configs/drape_v1.json` | **C2 통과 설정**: quality 12, 자기 충돌 1.5 mm, 2단계 용접, 용접 뒤 면밀도 질량 |
+| `configs/drape_v0.json` | C1 설정(시험 스크립트 값 그대로). 비교·재현용으로 남긴다 |
+| `configs/experiments/C2/` | C2 실험 설정 e01~e08 |
 | `fixtures/tee_gc_default/` | 시험 패턴: GarmentCode 기본 `t-shirt.yaml`, 몸 mean_all로 만든 specification |
 | `tests/` | pytest |
 
 설정 값을 바꿀 때는 파일을 고치지 말고 새 버전 파일(`drape_v1.json` …)을 만든다. 한 번에 한 값만 바꾼다.
 모든 지표 JSON에 설정 파일 이름·버전·sha256이 들어간다 (`.gitattributes`로 LF 고정 → 체크아웃마다 같은 해시).
+
+## 착장 절차 (drape_v1)
+
+1. 프레임 1–80: 중력 0, 봉제 스프링(loose edge)으로 패널을 모은다. 질량은 정점당 0.3 kg(수치 안정용).
+2. 프레임 80: 봉제 쌍 최대 거리가 `seam_gap_preweld_max_m`(10 mm, [C 제안]) 이하이면 쌍을 한 정점으로 용접한다.
+   넘으면 용접하지 않고 멈춰 `DRAPE_INVALID`(용접으로 감추지 않는다).
+   - 용접 메시의 시작 형상 = 용접 시점 좌표(쌍 평균).
+   - 휴지 형상(`rest_shape_key`) = 원래 패턴 변 길이에 맞춘 3D 이완 형상. 용접 시점 형상을 휴지로 쓰면
+     그때의 늘어남(변 길이 비 0.67–1.43)이 옷 치수에 들어가므로 쓰지 않는다. 이완 형상의 패턴 대비 편차는
+     `drape_metrics.json`의 `weld.rest_length_ratio_used`에 남는다(기준 실행: 0.966–1.026, p01–p99 0.996–1.004).
+   - 용접 뒤 질량 = 면밀도 0.18 kg/m² ([C 제안], 측정값 아님) × 패턴 면적 / 정점 수 (옷 전체 약 0.10 kg).
+3. 프레임 80–85에 중력을 1로 올리고, 110프레임 이후 안정 판정(최대 300).
+4. 지표는 용접 메시 좌표를 원래 정점(2001개)으로 되돌려 **원래 패턴 길이 대비**로 계산한다.
+   봉제선 닫힘은 용접 전 최대 거리로 판정한다(`seam_closure_mode: weld`).
 
 ## 좌표 규약 (명세서 6장, D와 합의 전 초안)
 
@@ -89,7 +107,12 @@ C:\dev\venvs\garmentcode\Scripts\python.exe C:\dev\FIT_RULER-c\pipelines\garment
 
 ## 알려진 문제
 
-- **신장 초과 / 진동 봉제선**: 기준 실행(해상도 2 cm, 봉제 80프레임)에서 최대 신장 1.838 > 1.5로 `DRAPE_INVALID`.
+- drape_v1 최대 신장 1.454로 기준 1.5에 여유가 작다. 최대 변은 어깨 꼭대기의 짧은 변(휴지 6.1 mm, 봉제선 3·10번 0.6 cm).
+  Blender 천 스프링 강성은 변 길이로 보정되지 않아 짧은 변이 같은 힘에 더 크게(비율로) 늘어난다.
+- drape_v1에서는 옷이 가벼워(0.10 kg) 중력에 의한 처짐이 작다. 천 강성 값은 면 저지 물성으로 맞춘 값이 아니다.
+- 용접 휴지 형상은 3D 이완 형상이라 굽힘 휴지 각도도 그 형상을 따른다(패널이 평평한 상태가 휴지가 아님).
+- 시뮬레이션 시간이 같은 설정에서도 크게 흔들린다(v0: 24–79 s, v1: 76–90 s). 결과는 비트 단위로 같다.
+- (C1, drape_v0) **신장 초과 / 진동 봉제선**: 기준 실행(해상도 2 cm, 봉제 80프레임)에서 최대 신장 1.838 > 1.5로 `DRAPE_INVALID`.
   봉제선 남은 거리 최대 9.41 mm (중앙 0.47 mm). 1.5 초과 변 6개는 모두 왼쪽 앞 소매(최대 1.838)와
   왼쪽 앞판(1.787)에 있고, 최악 변은 Z≈1.32 m(진동 높이)다. 벌어짐 상위 봉제선도 왼쪽 소매 옆선·진동
   (stitch 8–11)이다. 좌우 대칭 패턴인데 왼쪽만 나빠 원인 미확인

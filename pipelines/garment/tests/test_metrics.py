@@ -113,3 +113,27 @@ def test_per_panel_and_stitch_summaries():
     assert panels[0]['stretch_max'] == 2.0 and panels[0]['n_over_limit'] == 3  # 가로 변 2개 + 대각선(1.58)
     s = metrics.per_stitch_gap(cur, [[0, 1, 3]], [0, 0, 0, 0], ['front'])
     assert s[0]['stitch'] == 3 and s[0]['gap_max_mm'] == 2000.0
+
+
+def test_seam_closure_sewing_springs_rule():
+    th = dict(TH, seam_gap_max_m=0.002)
+    cur = REST.copy()
+    r = metrics.evaluate(REST, FACES, cur, [[0, 1, 0]], [0.0] * 10, outside(), True, th)
+    assert r['seam_closure_mode'] == 'sewing_springs' and not r['seam_closed_ok'] and not r['drape_ok']
+    r = metrics.evaluate(REST, FACES, cur, [[0, 0, 0]], [0.0] * 10, outside(), True, th)
+    assert r['seam_closed_ok'] and r['drape_ok']
+
+
+def test_seam_closure_weld_rule_uses_preweld_gap():
+    th = dict(TH, seam_gap_max_m=0.002, seam_gap_preweld_max_m=0.010)
+    # 용접 뒤 거리 0이어도 용접 전 거리가 기준을 넘으면 실패
+    r = metrics.evaluate(REST, FACES, REST, [[0, 0, 0]], [0.0] * 10, outside(), True, th, preweld_gaps=[0.011])
+    assert r['seam_closure_mode'] == 'weld' and r['seam_gap_preweld_max_mm'] == 11.0
+    assert not r['seam_closed_ok'] and not r['drape_ok']
+    r = metrics.evaluate(REST, FACES, REST, [[0, 0, 0]], [0.0] * 10, outside(), True, th, preweld_gaps=[0.0068])
+    assert r['seam_closed_ok'] and r['drape_ok']
+
+
+def test_v0_has_no_seam_rule():
+    r = run(REST, pairs=[(0, 1, 0)])
+    assert 'seam_closed_ok' not in r and r['drape_ok']

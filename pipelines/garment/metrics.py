@@ -71,8 +71,13 @@ def penetration(areas, signed_dist, depth_m, body_closed):
     return ratio, unknown, status
 
 
-def evaluate(rest, faces, cur, stitch_pairs, disp_hist, signed_dist, body_closed, thresholds):
-    """명세서 6장 착장 검사. 키·반올림은 시험 스크립트(runs/tee_test) 결과와 같게 유지한다."""
+def evaluate(rest, faces, cur, stitch_pairs, disp_hist, signed_dist, body_closed, thresholds,
+             preweld_gaps=None):
+    """명세서 6장 착장 검사. 키·반올림은 시험 스크립트(runs/tee_test) 결과와 같게 유지한다.
+
+    preweld_gaps: 용접 방식이면 용접 직전 봉제 쌍 거리(m). 용접 뒤에는 거리가 0이 되므로
+    봉제선 닫힘은 용접 전 값으로 판정한다(thresholds.seam_gap_preweld_max_m).
+    """
     th = thresholds
     tris, n_non_tri = triangles(faces)
     cur = np.asarray(cur, float)
@@ -102,6 +107,17 @@ def evaluate(rest, faces, cur, stitch_pairs, disp_hist, signed_dist, body_closed
     }
     result['drape_ok'] = (result['stable_ok'] and result['penetration_ok']
                           and result['stretch_ok'] and not has_nan)
+    # [C 제안] 봉제선 닫힘. 설정 thresholds에 seam_gap_max_m가 있을 때만 판정에 넣는다(drape_v0에는 없음).
+    if preweld_gaps is not None:
+        pre = float(np.max(preweld_gaps))
+        result['seam_closure_mode'] = 'weld'
+        result['seam_gap_preweld_max_mm'] = round(pre * 1000, 2)
+        result['seam_closed_ok'] = pre <= th['seam_gap_preweld_max_m']
+        result['drape_ok'] = result['drape_ok'] and result['seam_closed_ok']
+    elif 'seam_gap_max_m' in th:
+        result['seam_closure_mode'] = 'sewing_springs'
+        result['seam_closed_ok'] = float(gap.max()) <= th['seam_gap_max_m']
+        result['drape_ok'] = result['drape_ok'] and result['seam_closed_ok']
     return result
 
 

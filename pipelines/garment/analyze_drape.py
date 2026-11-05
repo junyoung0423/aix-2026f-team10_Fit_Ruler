@@ -20,7 +20,7 @@ from drape_config import load_config  # noqa: E402
 
 COMPARED_KEYS = ('stable_last10_median_mm', 'stable_ok', 'penetration_area_ratio', 'penetration_ok',
                  'penetration_status', 'penetration_unknown_faces', 'stretch_max', 'stretch_p99',
-                 'stretch_ok', 'nan', 'seam_gap_max_mm', 'seam_gap_median_mm', 'drape_ok')
+                 'stretch_ok', 'nan', 'seam_gap_max_mm', 'seam_gap_median_mm', 'seam_closed_ok', 'drape_ok')
 
 
 def analyze(run_dir, config_path=None):
@@ -39,8 +39,13 @@ def analyze(run_dir, config_path=None):
     assert len(co) == len(rest), (len(co), len(rest))
     sd = np.asarray(trace['signed_dist_m'], dtype=float)
     offline = metrics.evaluate(rest, g['faces'], co, g['stitch_pairs'], trace['disp_median_m_per_frame'],
-                               sd, data['body']['is_watertight'], th)
-    mismatch = {k: [blender_result[k], offline[k]] for k in COMPARED_KEYS if blender_result[k] != offline[k]}
+                               sd, data['body']['is_watertight'], th, preweld_gaps=trace.get('preweld_gaps_m'))
+    if 'weld_rest_ok' in blender_result:
+        # 용접 휴지 형상 검사는 Blender 안에서만 계산된다(이완 형상이 Blender 쪽에만 있음). 그 값을 그대로 합친다.
+        offline['weld_rest_ok'] = blender_result['weld_rest_ok']
+        offline['drape_ok'] = offline['drape_ok'] and offline['weld_rest_ok']
+    mismatch = {k: [blender_result.get(k), offline.get(k)] for k in COMPARED_KEYS
+                if blender_result.get(k) != offline.get(k)}
 
     names = [p['name'] for p in g['panels']]
     panels, worst = metrics.per_panel_stretch(rest, g['faces'], co, g['panel_of_vertex'], names,
