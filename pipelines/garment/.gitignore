@@ -1,0 +1,19 @@
+# C 파이프라인 실행 산출물 (C:\dev\fitruler_c\runs 에 두지만, 실수로 생겨도 커밋되지 않게)
+*.blend
+*.blend1
+*.obj
+*.mtl
+*.mp4
+*.png
+*.exr
+*.npy
+*.npz
+drape_input.json
+drape_metrics.json
+drape_trace.json
+analysis.json
+run_summary.json
+*_log.txt
+runs/
+__pycache__/
+.pytest_cache/
