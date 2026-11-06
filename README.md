@@ -2,7 +2,7 @@
 
 신체 치수와 등록 티셔츠의 실측을 비교하고, 3D 착장과 실사화 영상으로 확인하는 가상 피팅 프로젝트입니다.
 
-**현재 단계: 설계 및 명세서 초안 작성.** 이 저장소는 프로젝트 안내와 개발 명세서 초안을 관리합니다. 아래 기능과 기술 구성은 구현 목표이며, 실행 가능한 애플리케이션 코드는 아직 포함하지 않습니다.
+**현재 단계: 명세서 초안 작성과 공통 계약·핏 엔진 구현 시작.** 이 저장소는 프로젝트 안내, 개발 명세서 초안, 그리고 첫 구현인 공통 데이터 계약과 수치 기반 핏 규칙 엔진을 관리합니다. 아래 기능과 기술 구성은 구현 목표이며, 화면·작업 API·3D 착장과 실사화 어댑터는 아직 포함하지 않습니다.
 
 ## 개발 명세서
 
@@ -155,11 +155,38 @@ C와 D는 몸·의류의 단위와 좌표, 착장 결과를 함께 검토합니�
 ```text
 .
 ├── README.md
+├── CONTRIBUTING.md                 협업 규칙(브랜치·커밋·PR·계약 변경 절차)
+├── .github/                        CI, PR 템플릿, CODEOWNERS
+├── backend/
+│   ├── pyproject.toml
+│   ├── src/fit_ruler/
+│   │   ├── contracts/              T01 공통 데이터 계약(Pydantic 모델, 열거형, 포트 DTO)
+│   │   └── fit_engine/             T05 핏 규칙 엔진(fit_rules_v0, compute_report)
+│   └── tests/                      입력 검증, 판정 경계, 샘플·스키마 일치 테스트
+├── contracts/schemas/              계약 모델에서 자동 생성한 JSON 스키마
+├── samples/                        팀 공통 시연용 샘플 JSON (실제 의류·사용자 결과 아님)
 └── docs/
-    └── AIMAX-specification-draft-v0.1.docx
+    ├── AIMAX-specification-draft-v0.1.docx
+    └── measurement-protocol-v1.md  신체·의류 측정 정의와 판정 구간
 ```
 
-애플리케이션의 디렉터리와 설치·실행 명령은 첫 구현이 추가될 때 함께 문서화합니다.
+### 개발 환경 시작
+
+Python 3.10 이상이 필요합니다.
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+pytest                                      # 테스트
+ruff check .                                # 린트
+python -m fit_ruler.contracts.generate      # 계약을 바꾼 뒤 스키마와 샘플 다시 만들기
+```
+
+계약(DTO·단위·필수 필드·판정 규칙)을 바꾸는 절차는 [CONTRIBUTING.md](CONTRIBUTING.md)를 따릅니다.
+작업 API, 작업 큐, 화면, 3D·실사화 어댑터의 디렉터리와 실행 명령은 구현이 추가될 때 함께 문서화합니다.
 
 ## 협업과 문서 관리
 
