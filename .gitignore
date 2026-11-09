@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# 환경 설정과 비밀값 (fal API 키 등은 절대 커밋하지 않는다)
+.env
+.env.*
+!.env.example
+
+# macOS / 에디터
+.DS_Store
+.idea/
+.vscode/
+
+# 개발 중 생기는 산출물. 신체 입력·몸 파일·영상은 샘플이 아니면 저장소에 올리지 않는다
+*.blend1
+*.log

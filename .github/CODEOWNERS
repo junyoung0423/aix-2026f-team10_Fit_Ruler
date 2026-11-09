@@ -1,0 +1,11 @@
+# 계약과 핏 엔진은 B(서버와 핏 판정)가 관리한다. (명세서 15장)
+# 검토 짝: B의 API·상태는 A가, 작업 인수는 D가 확인한다.
+#
+# TODO: 팀원의 GitHub 아이디를 확인해 A·C·D를 아래 항목에 추가한다.
+#   예) /contracts/  @b-user @a-user @c-user @d-user
+# 저장소에 쓰기 권한이 있는 사용자만 코드 오너로 인식된다.
+
+/contracts/   @calix070924-wq
+/samples/     @calix070924-wq
+/backend/     @calix070924-wq
+/.github/     @calix070924-wq
