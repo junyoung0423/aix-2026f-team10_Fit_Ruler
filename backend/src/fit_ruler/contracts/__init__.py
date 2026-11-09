@@ -30,12 +30,20 @@ from fit_ruler.contracts.measurements import (
     FittingRequest,
     Measurements,
 )
-from fit_ruler.contracts.ports import PortError, PortRequest, PortResult
+from fit_ruler.contracts.ports import (
+    ARTIFACT_PRODUCING_STAGES,
+    PortError,
+    PortRequest,
+    PortResult,
+    PortResultInvalid,
+    require_output_artifacts,
+)
 from fit_ruler.contracts.report import FitReport, RegionResult
 from fit_ruler.contracts.status import FittingStatus, ReportPart, StageProgress, VisualPart
 from fit_ruler.contracts.versions import SCHEMA_VERSION
 
 __all__ = [
+    "ARTIFACT_PRODUCING_STAGES",
     "FAMILY_BASIC_SHORT_SLEEVE_CREW",
     "SCHEMA_VERSION",
     "SUPPORTED_PROTOCOL_VERSIONS",
@@ -55,6 +63,7 @@ __all__ = [
     "PortError",
     "PortRequest",
     "PortResult",
+    "PortResultInvalid",
     "QualityStatus",
     "ReasonCode",
     "Region",
@@ -65,4 +74,5 @@ __all__ = [
     "StageProgress",
     "StageStatus",
     "VisualPart",
+    "require_output_artifacts",
 ]

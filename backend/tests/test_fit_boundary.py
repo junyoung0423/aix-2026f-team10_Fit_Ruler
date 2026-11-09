@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import pytest
 
 from fit_ruler.contracts import ErrorCode, FitLabel, GarmentStatus, ReasonCode, Region
+from fit_ruler.contracts.garment import MAX_GARMENT_CM
 from fit_ruler.fit_engine import FitEngineError, compute_report
 
 FIXED_TIME = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -188,6 +189,23 @@ def test_rounding_is_applied_only_to_display_text(body, make_garment):
     assert result.ease_cm == pytest.approx(5.96)
     assert result.label is FitLabel.SNUG
     assert "5.96" not in result.explanation and "6.0 cm" in result.explanation
+
+
+def test_largest_supported_garment_measurements_compute_without_error(body, make_garment):
+    # 지원 범위의 상한 값도 판정과 문구 반올림에서 예외 없이 계산돼야 한다.
+    # (범위 밖의 1e30은 입력 검증에서 거절하므로 여기까지 오지 않는다. test_validation 참고)
+    top = MAX_GARMENT_CM
+    report = _run(
+        body, make_garment(chest=top, shoulder=top, waist=top, sleeve=top, length=top)
+    )
+    chest = _region(report, Region.CHEST)
+    assert chest.label is FitLabel.LOOSE
+    assert chest.ease_cm == pytest.approx(200.0)
+    assert "200.0 cm" in chest.explanation
+    shoulder = _region(report, Region.SHOULDER)
+    assert shoulder.label is FitLabel.DROPPED
+    assert "256.0 cm" in shoulder.explanation
+    assert _region(report, Region.WAIST).label is FitLabel.LOOSE
 
 
 # --- 실행 차단 -------------------------------------------------------------------------------

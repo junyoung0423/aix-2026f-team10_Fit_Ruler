@@ -15,6 +15,7 @@ from fit_ruler.contracts import (
     Measurements,
     Mode,
 )
+from fit_ruler.contracts.garment import MAX_GARMENT_CM
 
 VALID = {
     "height_cm": 175.0,
@@ -150,6 +151,31 @@ def test_ready_garment_requires_chest_and_shoulder(chest, shoulder):
 
 def test_draft_garment_may_lack_required_measurements():
     assert _garment(GarmentStatus.DRAFT, None, None).status is GarmentStatus.DRAFT
+
+
+GARMENT_FIELDS = [
+    "chest_girth_cm",
+    "waist_girth_cm",
+    "shoulder_width_cm",
+    "sleeve_length_cm",
+    "body_length_cm",
+]
+
+
+@pytest.mark.parametrize("field", GARMENT_FIELDS)
+def test_garment_measurement_upper_edge_is_inclusive(field):
+    measurements = GarmentMeasurements(**{field: MAX_GARMENT_CM})
+    assert getattr(measurements, field) == MAX_GARMENT_CM
+
+
+@pytest.mark.parametrize("field", GARMENT_FIELDS)
+@pytest.mark.parametrize(
+    "bad", [MAX_GARMENT_CM + 0.1, 1e30, 1e308], ids=["just_over", "1e30", "1e308"]
+)
+def test_garment_measurement_above_supported_range_is_rejected(field, bad):
+    # 1e30 cm는 예전에는 검증을 통과해 핏 계산의 반올림에서 decimal.InvalidOperation을 냈다.
+    with pytest.raises(ValidationError):
+        GarmentMeasurements(**{field: bad})
 
 
 def test_garment_measurements_are_null_not_zero():

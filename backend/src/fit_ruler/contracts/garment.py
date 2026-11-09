@@ -11,8 +11,15 @@ from fit_ruler.contracts.versions import SCHEMA_VERSION
 # 첫 버전이 지원하는 의류군 (명세서 1장 R01: 성인용 기본 반팔 라운드넥, 무지)
 FAMILY_BASIC_SHORT_SLEEVE_CREW = "basic_short_sleeve_crew"
 
-# 의류 실측은 0보다 큰 유한한 cm 값이다. 없는 값은 0이 아니라 null로 둔다 (명세서 3장).
-GarmentCm = Annotated[float, Field(strict=True, allow_inf_nan=False, gt=0)]
+# 의류 실측의 지원 범위(cm): 0 초과 300 이하. 상한은 가장 큰 신체 입력(가슴 160 cm)에 여유를
+# 더한 둘레도 넉넉히 담으면서, 비현실적인 값(예: 1e30)이 핏 계산의 10진수 반올림에서
+# 예외를 일으키기 전에 입력 단계에서 거절하기 위한 제안값이다. 경계값은 포함한다.
+# 모델과 JSON 스키마가 같은 범위를 쓰도록 이 한 곳에서만 정한다.
+MAX_GARMENT_CM = 300.0
+
+# 의류 실측은 0보다 크고 MAX_GARMENT_CM 이하인 유한한 cm 값이다.
+# 없는 값은 0이 아니라 null로 둔다 (명세서 3장).
+GarmentCm = Annotated[float, Field(strict=True, allow_inf_nan=False, gt=0, le=MAX_GARMENT_CM)]
 
 
 class GarmentMeasurements(BaseModel):

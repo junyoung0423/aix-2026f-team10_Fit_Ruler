@@ -12,7 +12,14 @@ import pytest
 from jsonschema import Draft202012Validator
 from pydantic import BaseModel, ValidationError
 
-from fit_ruler.contracts import FittingRequest, GarmentVariant
+from fit_ruler.contracts import (
+    FittingRequest,
+    GarmentVariant,
+    PortError,
+    PortRequest,
+    PortResult,
+)
+from fit_ruler.contracts.garment import MAX_GARMENT_CM
 from fit_ruler.contracts.generate import SCHEMA_MODELS
 
 from .conftest import REPO_ROOT, SAMPLES
@@ -151,10 +158,16 @@ INVALID_GARMENTS = {
     "모르는 실측 필드": modified(GARMENT, ["measurements", "hem_cm"], 50.0),
     "meta 실측 여부 누락": modified(GARMENT, ["measurement_meta", "is_measured"], KeyError),
     "id 비어 있음": modified(GARMENT, ["id"], ""),
+    "실측이 지원 상한 바로 위": modified(
+        GARMENT, ["measurements", "chest_girth_cm"], MAX_GARMENT_CM + 0.1
+    ),
+    "실측 1e30": modified(GARMENT, ["measurements", "chest_girth_cm"], 1e30),
+    "허리 실측 1e30": modified(GARMENT, ["measurements", "waist_girth_cm"], 1e30),
 }
 
 VALID_GARMENTS = {
     "샘플 그대로": GARMENT,
+    "실측이 지원 상한 경계": modified(GARMENT, ["measurements", "chest_girth_cm"], MAX_GARMENT_CM),
     "DRAFT는 가슴·어깨 없어도 됨": modified(
         modified(modified(GARMENT, ["status"], "DRAFT"), ["measurements", "chest_girth_cm"], None),
         ["measurements", "shoulder_width_cm"],
@@ -187,6 +200,119 @@ def test_schema_accepts_what_the_model_accepts_for_garments(case):
     payload = VALID_GARMENTS[case]
     assert model_accepts(GarmentVariant, payload), "모델이 받아들여야 하는 케이스"
     assert schema_accepts("garment_variant", payload)
+
+
+# --- 포트 DTO: 모델과 스키마가 같은 판정을 한다 -------------------------------------------------
+
+PORT_REQUEST = {
+    "schema_version": "v1",
+    "job_id": "fit_sample_001",
+    "attempt_id": "att_001",
+    "input_artifact_ids": ["art_in_001"],
+    "config_version": "cfg_v1",
+    "timeout_seconds": 30,
+    "trace_id": "trace_001",
+}
+
+PORT_RESULT = {
+    "schema_version": "v1",
+    "output_artifact_ids": ["art_render_001"],
+    "metrics": {"frames": 120, "fps": 24.0, "codec": "h264"},
+    "tool_versions": {"renderer": "0.1.0"},
+}
+
+PORT_ERROR = {
+    "code": "RENDER_FAILED",
+    "stage": "RENDER",
+    "retryable": True,
+    "safe_message": "잠시 후 다시 시도해 주세요.",
+    "internal_details_ref": "ops/log/001",
+}
+
+# (스키마 이름, 모델, 기준 payload)
+PORT_CASES = {
+    "port_request": (PortRequest, PORT_REQUEST),
+    "port_result": (PortResult, PORT_RESULT),
+    "port_error": (PortError, PORT_ERROR),
+}
+
+INVALID_PORT_PAYLOADS = {
+    "빈 결과 {}": ("port_result", {}),
+    "결과에 schema_version 없음": (
+        "port_result",
+        modified(PORT_RESULT, ["schema_version"], KeyError),
+    ),
+    "결과에 output_artifact_ids 없음": (
+        "port_result",
+        modified(PORT_RESULT, ["output_artifact_ids"], KeyError),
+    ),
+    "결과에 metrics 없음": ("port_result", modified(PORT_RESULT, ["metrics"], KeyError)),
+    "결과에 tool_versions 없음": (
+        "port_result",
+        modified(PORT_RESULT, ["tool_versions"], KeyError),
+    ),
+    "결과에 모르는 필드": ("port_result", modified(PORT_RESULT, ["extra"], 1)),
+    "산출물 ID가 빈 문자열": (
+        "port_result",
+        modified(PORT_RESULT, ["output_artifact_ids"], [""]),
+    ),
+    "지표 값이 불리언": ("port_result", modified(PORT_RESULT, ["metrics", "frames"], True)),
+    "timeout이 숫자 문자열": ("port_request", modified(PORT_REQUEST, ["timeout_seconds"], "30")),
+    "timeout이 불리언": ("port_request", modified(PORT_REQUEST, ["timeout_seconds"], True)),
+    "timeout 0": ("port_request", modified(PORT_REQUEST, ["timeout_seconds"], 0)),
+    "timeout 음수": ("port_request", modified(PORT_REQUEST, ["timeout_seconds"], -1)),
+    "timeout 누락": ("port_request", modified(PORT_REQUEST, ["timeout_seconds"], KeyError)),
+    "retryable이 문자열": ("port_error", modified(PORT_ERROR, ["retryable"], "true")),
+    "retryable이 숫자": ("port_error", modified(PORT_ERROR, ["retryable"], 1)),
+    "오류 코드 오류": ("port_error", modified(PORT_ERROR, ["code"], "BOOM")),
+}
+
+VALID_PORT_PAYLOADS = {
+    "요청 그대로": ("port_request", PORT_REQUEST),
+    "요청 timeout 1": ("port_request", modified(PORT_REQUEST, ["timeout_seconds"], 1)),
+    "요청 입력 산출물 생략": (
+        "port_request",
+        modified(PORT_REQUEST, ["input_artifact_ids"], KeyError),
+    ),
+    "결과 그대로": ("port_result", PORT_RESULT),
+    "결과 산출물 목록이 비어 있음(키는 필수)": (
+        "port_result",
+        modified(PORT_RESULT, ["output_artifact_ids"], []),
+    ),
+    "결과 지표·도구 버전이 비어 있음(키는 필수)": (
+        "port_result",
+        modified(modified(PORT_RESULT, ["metrics"], {}), ["tool_versions"], {}),
+    ),
+    "오류 그대로": ("port_error", PORT_ERROR),
+    "오류 retryable false": ("port_error", modified(PORT_ERROR, ["retryable"], False)),
+    "오류 stage 생략": ("port_error", modified(PORT_ERROR, ["stage"], KeyError)),
+}
+
+
+@pytest.mark.parametrize("case", list(INVALID_PORT_PAYLOADS))
+def test_schema_rejects_what_the_model_rejects_for_ports(case):
+    name, payload = INVALID_PORT_PAYLOADS[case]
+    model = PORT_CASES[name][0]
+    assert not model_accepts(model, payload), "모델이 거절해야 하는 케이스"
+    assert not schema_accepts(name, payload)
+
+
+@pytest.mark.parametrize("case", list(VALID_PORT_PAYLOADS))
+def test_schema_accepts_what_the_model_accepts_for_ports(case):
+    name, payload = VALID_PORT_PAYLOADS[case]
+    model = PORT_CASES[name][0]
+    assert model_accepts(model, payload), "모델이 받아들여야 하는 케이스"
+    assert schema_accepts(name, payload)
+
+
+def test_port_result_schema_requires_every_field():
+    schema = load_schema("port_result")
+    assert set(schema["required"]) == {
+        "schema_version",
+        "output_artifact_ids",
+        "metrics",
+        "tool_versions",
+    }
 
 
 def test_body_input_schema_rejects_unsupported_protocol():
