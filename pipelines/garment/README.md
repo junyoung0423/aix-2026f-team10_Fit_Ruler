@@ -9,6 +9,13 @@ SKU 고정 패턴은 `garments/skus/<sku>/`에 있다(C3, `pattern_fit.py`).
 > 질량·강성 조정은 C3 범위가 아니어서 바꾸지 않았다. 모든 수치 기준은 명세서의
 **초기 검증값**이며 검증된 성능이 아니다.
 
+## 빠른 시작 (처음 실행하는 사람용)
+
+1. 환경: 아래 "환경" 표의 Python 3.9 가상환경 `C:\dev\venvs\garmentcode`, GarmentCode `C:\dev\GarmentCode`, Blender 5.2가 있어야 한다. 레포 루트로 이동한다: `cd C:\dev\FIT_RULER-c`
+2. 테스트(1분 안쪽): `C:\dev\venvs\garmentcode\Scripts\python.exe -m pytest pipelines\garment\tests -q`
+3. 착장 1회(약 2~6분, 결과는 `C:\dev\fitruler_c\runs\quick\try1\`): `C:\dev\venvs\garmentcode\Scripts\python.exe pipelines\garment\run_drape.py --spec pipelines\garment\fixtures\tee_gc_default\t-shirt__261103-16-24-09_specification.json --body C:\dev\GarmentCode\assets\bodies\mean_all.obj --config pipelines\garment\configs\drape_v1.json --name try1 --out-root C:\dev\fitruler_c\runs\quick`
+4. 결과 확인: 같은 폴더의 `drape_metrics.json`(`drape_ok`, `failed_checks`)과 `front.png`. 흐름과 한계는 [docs/spike-garmentcode-blender.md](docs/spike-garmentcode-blender.md).
+
 ## 환경 (이미 설치됨)
 
 | 항목 | 위치 / 버전 |
