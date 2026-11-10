@@ -1,11 +1,12 @@
 {
   "name": "pattern_fit_v0",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "status": "draft",
   "description": "C3: GarmentCode 기본 티셔츠를 SKU 목표 실측에 맞추는 설정. 패턴 생성용 몸은 mean_all 고정.",
   "body_yaml": "C:/dev/GarmentCode/assets/bodies/mean_all.yaml",
   "design_yaml": "C:/dev/GarmentCode/assets/design_params/t-shirt.yaml",
-  "targets_json": "C:/dev/FIT_RULER-c/samples/garment_v1.json",
+  "targets_json": "samples/garment_v1.json",
+  "_paths_note": "상대경로는 저장소 루트 기준(pattern_fit.resolve_config). body_yaml·design_yaml은 저장소 밖 GarmentCode 설치 위치라 절대경로로 둔다. 0.1.1: targets_json 절대경로 -> 상대경로만 바꿈, 값은 0.1.0과 같다.",
   "tolerance_cm": 1.0,
   "_tolerance_note": "명세서 6장 패턴 최적화 초기 목표: 목표 실측과 패턴 재측정 차이 1.0 cm 이하. 완화하지 않는다.",
   "fit_params": {

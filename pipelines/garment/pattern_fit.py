@@ -2,7 +2,10 @@
 
 - 패턴 생성용 몸은 설정의 body_yaml 하나로 고정한다(mean_all). 사용자 몸으로 다시 만들지 않는다(R06).
 - 디자인 파라미터(몸 치수 대비 비율)만 yaml range 안에서 바꾼다.
-- 목표: samples/garment_v1.json measurements. null 항목은 맞추지 않는다(0으로 채우지 않음).
+- 목표: samples/garment_v1.json measurements (B가 계약 모델에서 생성하는 공통 샘플, C는 읽기만 한다).
+  null 항목은 맞추지 않는다(0으로 채우지 않음). 시연용 여부는 sample의 measurement_meta.is_measured·source_ref로 기록한다.
+- 허리(waist_girth_cm, waist_position_matched)는 지금 읽고 기록만 한다. 맞춤 대상은 아니다(C3b에서 추가).
+- 설정 파일의 상대경로는 저장소 루트 기준이다(cwd = GarmentCode 루트이므로 cwd 기준으로 풀지 않는다).
 - 판정: 항목마다 |패턴 재측정 - 목표| <= tolerance_cm (명세서 6장 초기 목표 1.0 cm). 기준을 바꾸지 않는다.
 - 패턴 자기 교차는 실패.
 
@@ -30,6 +33,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pattern_measure as pm  # noqa: E402
 
 FIELDS = ('chest_girth_cm', 'shoulder_width_cm', 'sleeve_length_cm', 'body_length_cm')
+REPO_ROOT = Path(__file__).resolve().parents[2]
+CFG_PATH_KEYS = ('body_yaml', 'design_yaml', 'targets_json')
+
+
+def resolve_repo_path(p, root=REPO_ROOT):
+    """설정 파일의 경로를 푼다. 절대경로는 그대로, 상대경로는 저장소 루트 기준."""
+    q = Path(p)
+    return q if q.is_absolute() else (Path(root) / q).resolve()
+
+
+def resolve_config(cfg, root=REPO_ROOT):
+    """CFG_PATH_KEYS를 절대경로로 바꾼 사본. 빈 값·누락은 조용히 채우지 않고 오류로 낸다."""
+    out = dict(cfg)
+    for k in CFG_PATH_KEYS:
+        if not cfg.get(k):
+            raise ValueError(f'config {k} is missing or empty')
+        out[k] = str(resolve_repo_path(cfg[k], root))
+    return out
 
 
 def sha256_file(p):
@@ -83,6 +104,25 @@ def load_targets(sample_path):
     s = json.loads(Path(sample_path).read_text(encoding='utf-8'))
     meas = s['measurements']
     return {f: meas.get(f) for f in FIELDS}, s
+
+
+def target_meta(sample):
+    """목표 sample의 출처·시연용 여부와 허리(읽기만, 맞춤 대상 아님)를 기록용으로 뽑는다. 없는 값은 None."""
+    meta = sample.get('measurement_meta', {})
+    return {
+        'garment_id': sample.get('id'),
+        'schema_version': sample.get('schema_version'),
+        'status': sample.get('status'),
+        'asset_version': sample.get('asset_version'),
+        'source_ref': sample.get('source_ref'),
+        'source': meta.get('source'),
+        'is_measured': meta.get('is_measured'),
+        'measurement_protocol_version': meta.get('measurement_protocol_version'),
+        'chest_from_flat_width': meta.get('chest_from_flat_width'),
+        'waist_girth_cm': sample.get('measurements', {}).get('waist_girth_cm'),
+        'waist_position_matched': meta.get('waist_position_matched'),
+        'waist_fitted': False,
+    }
 
 
 def cmd_sensitivity(cfg, out):
@@ -165,7 +205,8 @@ def cmd_fit(cfg, cfg_path, out):
                    'design_yaml': cfg['design_yaml'], 'design_yaml_sha256': sha256_file(cfg['design_yaml']),
                    'targets_json': cfg['targets_json'], 'targets_json_sha256': sha256_file(cfg['targets_json']),
                    'targets_source': sample['measurement_meta'].get('source'),
-                   'targets_is_measured': sample['measurement_meta'].get('is_measured')},
+                   'targets_is_measured': sample['measurement_meta'].get('is_measured'),
+                   'targets_meta': target_meta(sample)},
         'history': history,
     }
     (out / 'fit_result.json').write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding='utf-8')
@@ -208,7 +249,7 @@ def main():
     ap.add_argument('out_dir')
     a = ap.parse_args()
     cfg_path = Path(a.config).resolve()
-    cfg = json.loads(cfg_path.read_text(encoding='utf-8'))
+    cfg = resolve_config(json.loads(cfg_path.read_text(encoding='utf-8')))
     out = Path(a.out_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
     if a.cmd == 'sensitivity':
