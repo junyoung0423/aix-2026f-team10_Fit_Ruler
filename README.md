@@ -198,3 +198,6 @@ python -m fit_ruler.contracts.generate      # 계약을 바꾼 뒤 스키마와 
 - 임계값·기술 구성·범위가 바뀌면 명세서와 README를 함께 갱신합니다.
 
 Word 명세서는 현재의 상세 초안입니다. 다음 개정부터는 변경 내용을 PR 설명에 남기고, 팀이 합의한 버전 번호로 관리합니다.
+
+## 🎨 Wireframe
+- Figma Link: https://www.figma.com/make/FfC07sfo3Jea4gh76mvofS/%EC%A0%9C%EB%AA%A9-%EC%97%86%EC%9D%8C?fullscreen=1&t=u5CCbc8Ylm77TcGg-1&code-node-id=0-6
