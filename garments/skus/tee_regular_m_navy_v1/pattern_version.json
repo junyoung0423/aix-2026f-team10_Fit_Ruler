@@ -3,8 +3,20 @@
   "garment_id": "tee_regular_m_navy_v1",
   "status": "FIT_FAILED",
   "status_reason": "shoulder_width_cm: 패턴 34.457 cm, 목표 46.0 cm, 오차 -11.543 cm > 1.0 cm. GarmentCode 티셔츠의 어깨점은 패턴 생성용 몸의 shoulder_w로만 정해져(sleeves.py: (shoulder_w - 2)/2) 디자인 파라미터로 바꿀 수 없다. 몸은 mean_all 고정 조건.",
-  "targets_are_placeholder": true,
-  "targets_source": "PLACEHOLDER: 명세서 4장 예시값. 실물 티셔츠 실측으로 교체 필요",
+  "targets": {
+    "json": "samples/garment_v1.json",
+    "json_sha256": "58e9619b11fcdda3afc7afc3631f3a1d76e98ce9cf301506a23c8aa85dcb38d2",
+    "owner": "B (계약 모델에서 생성하는 공통 샘플, C는 읽기만 한다)",
+    "is_measured": false,
+    "source_ref": "SAMPLE_NOT_A_REAL_GARMENT",
+    "source": "명세서 4장 리포트 예시 값을 옮긴 시연용 샘플. 실제 의류를 실측한 값이 아니다.",
+    "asset_version": "sample_v1",
+    "measurement_protocol_version": "measure_v1",
+    "waist_girth_cm": 96.0,
+    "waist_position_matched": true,
+    "waist_fitted": false,
+    "note": "Csync(2026-11-10): C의 PLACEHOLDER 사본 대신 main 공통 샘플을 읽는다. 가슴·어깨·소매·기장 목표는 사본과 같다. pattern_fit_v0 0.1.1로 fit을 다시 돌려 맞춘 파라미터·design.yaml sha256이 같음을 확인했다. 허리는 C3b에서 맞춤 대상에 넣는다."
+  },
   "regenerate_per_user": false,
   "note": "이 패턴은 사용자마다 다시 생성하지 않는다(R06, C0 규칙 1). 다른 몸에는 이 패턴 파일을 그대로 다시 배치하고 착장한다.",
   "generator": {
@@ -48,7 +60,7 @@
     "shoulder_width_cm": 46.0,
     "sleeve_length_cm": 22.0,
     "body_length_cm": 70.0,
-    "waist_girth_cm": null
+    "waist_girth_cm": 96.0
   },
   "errors_cm": {
     "chest_girth_cm": 0.0,
@@ -65,16 +77,26 @@
   },
   "waist_girth_cm": {
     "value": null,
-    "reason": "target null (WAIST_POSITION_UNVERIFIED)"
+    "reason": "패턴 허리 측정 위치 미정. 목표 96.0(시연용 샘플)은 읽기만 했고 맞추지 않음. C3b에서 추가."
   },
   "self_intersecting": false,
-  "measurement_protocol": "garment_measure_v0 + pattern 정의 (review C3.md, pipelines/garment/pattern_measure.py)",
+  "measurement_protocol_version": "measure_v1",
+  "measurement_protocol": "measure_v1 (docs/measurement-protocol-v1.md) + C 패턴 측정 정의 (garments/MEASURING.md 2장, pipelines/garment/pattern_measure.py). 4개 필드의 패턴 측정 정의는 fit 당시 garment_measure_v0과 같다.",
   "fit_config": {
     "path": "pipelines/garment/configs/pattern_fit_v0.json",
     "sha256": "ad489b44ab89bd9f4c8e51d3f172f417da93af94a20a837abc3223d52f8c2ef3",
     "name": "pattern_fit_v0",
     "version": "0.1.0"
   },
-  "targets_json_sha256": "cdd1e8e7606e891a0340aabe41e72c0854ac5f4c93f22094b647851873be07f1",
+  "fit_config_reproduced": {
+    "path": "pipelines/garment/configs/pattern_fit_v0.json",
+    "name": "pattern_fit_v0",
+    "version": "0.1.1",
+    "sha256": "899cc43ef30b3e26c82d7d13f7dd314cfa6055124bc74807111d886723234acd",
+    "change": "targets_json 절대경로 -> 저장소 기준 상대경로만 바꿈",
+    "result": "같은 FIT_FAILED, 같은 fitted_design_params, design.yaml sha256 5ac9c363… 같음 (review Csync.md)"
+  },
+  "fit_time_targets_json_sha256": "cdd1e8e7606e891a0340aabe41e72c0854ac5f4c93f22094b647851873be07f1",
+  "fit_time_targets_note": "2026-11-05 fit 때 쓴 C 사본(samples/garment_v1.json, PLACEHOLDER, Csync에서 버림)의 sha256",
   "created": "2026-11-05"
 }

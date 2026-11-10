@@ -2,8 +2,10 @@
 
 GarmentCode 기본 티셔츠 패턴을 `samples/garment_v1.json` 목표 실측에 맞춰 고정한 파일이다(T02, 명세서 6장 패턴 최적화).
 
-- **목표 실측은 PLACEHOLDER(명세서 4장 예시값)다.** 실물 실측이 오면 `samples/garment_v1.json` 값만 바꾸고
-  아래 "다시 만들기"를 돌린 뒤 새 `pattern_version`으로 저장한다.
+- **목표 실측은 시연용 샘플 값이다**(`samples/garment_v1.json`: `is_measured: false`, `source_ref: SAMPLE_NOT_A_REAL_GARMENT`, 명세서 4장 예시값).
+  `samples/`는 B가 계약 모델에서 만드는 공통 샘플이라 C가 고치지 않는다. 실측 값은 B에게 전달해 샘플이 바뀐 뒤,
+  아래 "다시 만들기"를 돌려 새 `pattern_version`으로 저장한다.
+- 샘플에 허리 96.0 cm(`waist_position_matched: true`)가 있지만, 이 패턴은 허리를 맞추지 않았다(C3b에서 추가).
 - **이 패턴은 사용자마다 다시 생성하지 않는다**(R06, C0 규칙 1). 다른 몸에는 이 `pattern_specification.json`을
   그대로 다시 배치하고 착장한다. 의류 치수를 사용자 몸에 맞게 늘리거나 줄이지 않는다.
 - 패턴 생성용 몸은 GarmentCode `mean_all`(`body_mean_all.yaml`)로 고정한다. 사용자 몸도, D의 실제 몸(T07)도 아니다.
