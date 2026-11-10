@@ -1,0 +1,20 @@
+# pipelines/garment — Python 3.9 가상환경 (C의 개발 PC에서 쓰는 버전을 그대로 고정)
+#
+# 설치 순서 (자세한 절차: pipelines/garment/README.md "새 PC에서 설치")
+#   1) <venv>\Scripts\python.exe -m pip install -r pipelines\garment\requirements.txt
+#   2) pygarment: GarmentCode를 clone하고 커밋 d449629로 맞춘 뒤 편집 모드로 설치한다.
+#        git clone https://github.com/maria-korosteleva/GarmentCode.git <GarmentCode>
+#        git -C <GarmentCode> checkout d449629979028123a5c4dc9e732a2ec19b7fce31
+#        <venv>\Scripts\python.exe -m pip install -e <GarmentCode>
+#      (C의 개발 PC: pygarment 2.0.2 = GarmentCode d449629, MIT)
+#      실행할 때는 GarmentCode 루트를 import 경로에 넣는다(run_drape.py·pattern_fit.py의 --gc-root).
+#   Blender 5.2는 pip가 아니라 따로 설치한다.
+
+numpy==1.26.4
+scipy==1.13.1
+trimesh==4.12.2
+libigl==2.6.3
+cgal==6.0.1.post202410241521
+svgpathtools==1.8.0
+PyYAML==6.0.3
+pytest==8.4.2

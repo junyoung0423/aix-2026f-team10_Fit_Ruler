@@ -11,17 +11,61 @@ SKU 고정 패턴은 `garments/skus/<sku>/`에 있다(C3, `pattern_fit.py`).
 
 ## 빠른 시작 (처음 실행하는 사람용)
 
-1. 환경: 아래 "환경" 표의 Python 3.9 가상환경 `C:\dev\venvs\garmentcode`, GarmentCode `C:\dev\GarmentCode`, Blender 5.2가 있어야 한다. 레포 루트로 이동한다: `cd C:\dev\FIT_RULER-c`
-2. 테스트(1분 안쪽): `C:\dev\venvs\garmentcode\Scripts\python.exe -m pytest pipelines\garment\tests -q`
-3. 착장 1회(약 2~6분, 결과는 `C:\dev\fitruler_c\runs\quick\try1\`): `C:\dev\venvs\garmentcode\Scripts\python.exe pipelines\garment\run_drape.py --spec pipelines\garment\fixtures\tee_gc_default\t-shirt__261103-16-24-09_specification.json --body C:\dev\GarmentCode\assets\bodies\mean_all.obj --config pipelines\garment\configs\drape_v1.json --name try1 --out-root C:\dev\fitruler_c\runs\quick`
-4. 결과 확인: 같은 폴더의 `drape_metrics.json`(`drape_ok`, `failed_checks`)과 `front.png`. 흐름과 한계는 [docs/spike-garmentcode-blender.md](docs/spike-garmentcode-blender.md).
+경로는 자리표시다: `<repo>` 레포 루트, `<venv>` Python 3.9 가상환경, `<GarmentCode>` GarmentCode 루트, `<blender.exe>` Blender 5.2 실행 파일, `<runs>` 산출물 폴더(git 밖).
+(C의 개발 PC 예: `<repo>`=`C:\dev\FIT_RULER-c`, `<venv>`=`C:\dev\venvs\garmentcode`, `<GarmentCode>`=`C:\dev\GarmentCode`, `<blender.exe>`=`C:\Program Files\Blender Foundation\Blender 5.2\blender.exe`, `<runs>`=`C:\dev\fitruler_c\runs`)
 
-## 환경 (이미 설치됨)
+1. 설치가 안 되어 있으면 아래 "새 PC에서 설치"를 먼저 한다. 그다음 `cd <repo>`
+2. 테스트(1분 안쪽): `<venv>\Scripts\python.exe -m pytest pipelines\garment\tests -q -rs`
+3. 착장 1회(약 2~6분): `<venv>\Scripts\python.exe pipelines\garment\run_drape.py --spec pipelines\garment\fixtures\tee_gc_default\t-shirt__261103-16-24-09_specification.json --body <GarmentCode>\assets\bodies\mean_all.obj --config pipelines\garment\configs\drape_v1.json --name try1 --out-root <runs>\quick --gc-root <GarmentCode> --blender "<blender.exe>"`
+4. 결과: `<runs>\quick\try1\drape_metrics.json`(`drape_ok`, `failed_checks`)과 `front.png`. 흐름과 한계는 [docs/spike-garmentcode-blender.md](docs/spike-garmentcode-blender.md).
+
+## 새 PC에서 설치
+
+Windows PowerShell 기준이다. 경로에 한글·공백이 없는 곳(예: `C:\dev\...`)을 권한다. C 확장 라이브러리와 Blender가 한글 경로에서 문제를 일으킨 적이 있다.
+
+```powershell
+# 1) Python 3.9 가상환경 (python.org 3.9.x 설치 뒤)
+<python39>\python.exe -m venv <venv>
+
+# 2) GarmentCode: clone, 커밋 고정, 설정 템플릿 복사 (원본 코드는 고치지 않는다)
+git clone https://github.com/maria-korosteleva/GarmentCode.git <GarmentCode>
+git -C <GarmentCode> checkout d449629979028123a5c4dc9e732a2ec19b7fce31
+Copy-Item <GarmentCode>\system.template.json <GarmentCode>\system.json
+
+# 3) Python 패키지 (버전 고정) + pygarment(GarmentCode 편집 설치)
+<venv>\Scripts\python.exe -m pip install -r <repo>\pipelines\garment\requirements.txt
+<venv>\Scripts\python.exe -m pip install -e <GarmentCode>
+
+# 4) Blender 5.2 LTS를 blender.org에서 설치 (C 개발 PC: 5.2.3). 별도 설정은 없다.
+
+# 5) 확인: GarmentCode 경로는 --gc-root 또는 환경변수로 알려 준다
+$env:FIT_RULER_GC_ROOT = '<GarmentCode>'
+cd <repo>
+<venv>\Scripts\python.exe -m pytest pipelines\garment\tests -q -rs
+```
+
+- `--gc-root`가 없으면 환경변수 `FIT_RULER_GC_ROOT`를 쓰고, 그것도 없으면 `C:\dev\GarmentCode`를 쓴다.
+  `--blender`가 없으면 `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe`를 쓴다.
+- `run_drape.py`와 `pattern_fit.py`가 GarmentCode 루트를 import 경로에 넣고, 그 폴더에서 실행한다(`system.json`이 상대경로라서).
+  그래서 `PYTHONPATH`는 따로 맞추지 않아도 된다. 편집 설치(.pth)만으로는 `import pygarment`가 되지 않는다.
+- GPU는 필요 없다. GarmentCode 자체 시뮬레이터(NVIDIA warp)는 쓰지 않는다.
+
+**테스트 구분** (모두 `pipelines/garment/tests`)
+
+| 필요한 것 | 테스트 | 없으면 |
+|---|---|---|
+| requirements.txt만 (numpy·scipy·svgpathtools·PyYAML·pytest) | `test_coords`, `test_metrics`, `test_weld`, `test_drape_measure`, `test_pattern_measure`, `test_pattern_fit_config`(1개 제외) — 56개 | — |
+| + GarmentCode(`<GarmentCode>\pygarment`, `assets`) | `test_export` 3개, `test_pattern_fit_config`의 GarmentCode 파일 확인 1개 | skip (실패 아님) |
+| + Blender | 없음. Blender 착장은 위 빠른 시작 3번으로 확인한다 | — |
+
+C 개발 PC에서는 skip 0개로 60개 모두 통과한다.
+
+## 환경 (C 개발 PC, 이미 설치됨)
 
 | 항목 | 위치 / 버전 |
 |---|---|
 | Python | 3.9.13 `C:\dev\python39` (PATH 미등록), 가상환경 `C:\dev\venvs\garmentcode` (pygarment 2.0.2, numpy 1.26.4, trimesh, pytest) |
-| GarmentCode | `C:\dev\GarmentCode` (MIT, 커밋 d449629). 원본은 고치지 않는다. 실행 시 cwd·PYTHONPATH = GarmentCode 루트 (system.json이 상대경로) |
+| GarmentCode | `C:\dev\GarmentCode` (MIT, 커밋 d449629). 원본은 고치지 않는다. 스크립트가 `--gc-root`로 받아 cwd·import 경로를 맞춘다 (system.json이 상대경로) |
 | Blender | 5.2.3 LTS `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe`, `--background`로만 실행 |
 | 장비 | CPU만 (NVIDIA GPU 없음 → GarmentCode warp 시뮬레이터 사용 불가) |
 

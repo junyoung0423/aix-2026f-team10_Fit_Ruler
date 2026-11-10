@@ -5,14 +5,18 @@
 - 목표: samples/garment_v1.json measurements (B가 계약 모델에서 생성하는 공통 샘플, C는 읽기만 한다).
   null 항목은 맞추지 않는다(0으로 채우지 않음). 시연용 여부는 sample의 measurement_meta.is_measured·source_ref로 기록한다.
 - 허리(waist_girth_cm, waist_position_matched)는 지금 읽고 기록만 한다. 맞춤 대상은 아니다(C3b에서 추가).
-- 설정 파일의 상대경로는 저장소 루트 기준이다(cwd = GarmentCode 루트이므로 cwd 기준으로 풀지 않는다).
+- 설정 파일의 상대경로: targets_json은 저장소 루트 기준, body_yaml·design_yaml은 GarmentCode 루트 기준(--gc-root).
+  cwd 기준으로 풀지 않는다.
+- GarmentCode 루트: --gc-root, 없으면 환경변수 FIT_RULER_GC_ROOT, 없으면 C:\dev\GarmentCode.
+  GarmentCode의 system.json이 상대경로라 실행 중 cwd를 GarmentCode 루트로 옮기고 sys.path에 넣는다.
+  명령행의 다른 경로는 옮기기 전에 절대경로로 바꾼다.
 - 판정: 항목마다 |패턴 재측정 - 목표| <= tolerance_cm (명세서 6장 초기 목표 1.0 cm). 기준을 바꾸지 않는다.
 - 패턴 자기 교차는 실패.
 
-실행 (cwd = GarmentCode 루트, PYTHONPATH = GarmentCode 루트):
-    python pattern_fit.py sensitivity <fit_config.json> <out_dir>
-    python pattern_fit.py fit <fit_config.json> <out_dir>
-    python pattern_fit.py generate <design.yaml> <body.yaml> <out_dir>
+실행 (어느 cwd에서든):
+    python pattern_fit.py sensitivity <fit_config.json> <out_dir> [--gc-root <GarmentCode>]
+    python pattern_fit.py fit <fit_config.json> <out_dir> [--gc-root <GarmentCode>]
+    python pattern_fit.py generate <design.yaml> <body.yaml> <out_dir> [--gc-root <GarmentCode>]
 
 고정 패턴은 fit 프로세스 안에서 만든 패턴을 쓰지 않고, 고정한 디자인 yaml로 새 프로세스에서 generate 한다.
 한 프로세스에서 패턴을 여러 번 만들면 봉제선 목록 순서가 바뀔 수 있다(기하·봉제선 집합은 같음, C3에서 확인).
@@ -21,6 +25,7 @@ import argparse
 import copy
 import hashlib
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -34,23 +39,38 @@ import pattern_measure as pm  # noqa: E402
 
 FIELDS = ('chest_girth_cm', 'shoulder_width_cm', 'sleeve_length_cm', 'body_length_cm')
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CFG_PATH_KEYS = ('body_yaml', 'design_yaml', 'targets_json')
+DEFAULT_GC_ROOT = Path(os.environ.get('FIT_RULER_GC_ROOT') or r'C:\dev\GarmentCode')
+REPO_PATH_KEYS = ('targets_json',)  # 저장소 루트 기준
+GC_PATH_KEYS = ('body_yaml', 'design_yaml')  # GarmentCode 루트 기준
+CFG_PATH_KEYS = GC_PATH_KEYS + REPO_PATH_KEYS
 
 
 def resolve_repo_path(p, root=REPO_ROOT):
-    """설정 파일의 경로를 푼다. 절대경로는 그대로, 상대경로는 저장소 루트 기준."""
+    """설정 파일의 경로를 푼다. 절대경로는 그대로, 상대경로는 root 기준."""
     q = Path(p)
     return q if q.is_absolute() else (Path(root) / q).resolve()
 
 
-def resolve_config(cfg, root=REPO_ROOT):
-    """CFG_PATH_KEYS를 절대경로로 바꾼 사본. 빈 값·누락은 조용히 채우지 않고 오류로 낸다."""
+def resolve_config(cfg, root=REPO_ROOT, gc_root=DEFAULT_GC_ROOT):
+    """경로 키를 절대경로로 바꾼 사본. 빈 값·누락은 조용히 채우지 않고 오류로 낸다."""
     out = dict(cfg)
     for k in CFG_PATH_KEYS:
         if not cfg.get(k):
             raise ValueError(f'config {k} is missing or empty')
-        out[k] = str(resolve_repo_path(cfg[k], root))
+        base = gc_root if k in GC_PATH_KEYS else root
+        out[k] = str(resolve_repo_path(cfg[k], base))
     return out
+
+
+def enter_gc_root(gc_root):
+    """GarmentCode 루트로 cwd를 옮기고 import 경로에 넣는다(system.json이 상대경로). 없으면 오류."""
+    gc_root = Path(gc_root).resolve()
+    if not (gc_root / 'assets' / 'garment_programs').is_dir():
+        sys.exit(f'GarmentCode root not found (--gc-root / FIT_RULER_GC_ROOT): {gc_root}')
+    os.chdir(gc_root)
+    if str(gc_root) not in sys.path:
+        sys.path.insert(0, str(gc_root))
+    return gc_root
 
 
 def sha256_file(p):
@@ -238,20 +258,26 @@ def main():
         ap.add_argument('design_yaml')
         ap.add_argument('body_yaml')
         ap.add_argument('out_dir')
+        ap.add_argument('--gc-root', default=str(DEFAULT_GC_ROOT))
         a = ap.parse_args()
         out = Path(a.out_dir).resolve()
+        design_yaml, body_yaml = Path(a.design_yaml).resolve(), Path(a.body_yaml).resolve()
         out.mkdir(parents=True, exist_ok=True)
-        cmd_generate(Path(a.design_yaml).resolve(), Path(a.body_yaml).resolve(), out)
+        enter_gc_root(a.gc_root)
+        cmd_generate(design_yaml, body_yaml, out)
         return
     ap = argparse.ArgumentParser()
     ap.add_argument('cmd', choices=['sensitivity', 'fit'])
     ap.add_argument('config')
     ap.add_argument('out_dir')
+    ap.add_argument('--gc-root', default=str(DEFAULT_GC_ROOT))
     a = ap.parse_args()
     cfg_path = Path(a.config).resolve()
-    cfg = resolve_config(json.loads(cfg_path.read_text(encoding='utf-8')))
+    gc_root = Path(a.gc_root).resolve()
+    cfg = resolve_config(json.loads(cfg_path.read_text(encoding='utf-8')), gc_root=gc_root)
     out = Path(a.out_dir).resolve()
     out.mkdir(parents=True, exist_ok=True)
+    enter_gc_root(gc_root)
     if a.cmd == 'sensitivity':
         cmd_sensitivity(cfg, out)
     else:

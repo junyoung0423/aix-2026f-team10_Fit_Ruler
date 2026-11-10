@@ -47,16 +47,17 @@ Blender 5.2 cloth (blender_drape.py, 설정 configs/drape_v1.json)
 - **결과**: 신장 기준을 넘은 변이 4개 패널에 1개씩 있습니다(오른 뒤소매 1.697, 오른 앞판 1.682, 왼 앞판 1.641, 왼 앞소매 1.640).
   - 모두 진동·어깨 꼭대기 근처입니다.
   - 고치지 않고 그대로 기록했습니다. 견본 1도 여유가 작았던(1.454) 같은 부위입니다.
-- **생성 명령** (cwd·PYTHONPATH = `C:\dev\GarmentCode`):
-  - `pattern_fit.py generate <fixtures\tee_gc_sleeve045\t-shirt_sleeve045.yaml> C:\dev\GarmentCode\assets\bodies\mean_all.yaml <out>`
+- 명령은 `<repo>`에서 실행합니다. 자리표시는 `pipelines/garment/README.md` "빠른 시작"과 같습니다.
+- **생성 명령**:
+  - `<venv>\Scripts\python.exe pipelines\garment\pattern_fit.py generate pipelines\garment\fixtures\tee_gc_sleeve045\t-shirt_sleeve045.yaml <GarmentCode>\assets\bodies\mean_all.yaml <runs>\gen_sleeve045 --gc-root <GarmentCode>`
 - **착장 명령**:
-  - `run_drape.py --spec pipelines\garment\fixtures\tee_gc_sleeve045\pattern_specification.json --body C:\dev\GarmentCode\assets\bodies\mean_all.obj --config pipelines\garment\configs\drape_v1.json --name sleeve045_v1 --out-root C:\dev\fitruler_c\runs\C2PR`
+  - `<venv>\Scripts\python.exe pipelines\garment\run_drape.py --spec pipelines\garment\fixtures\tee_gc_sleeve045\pattern_specification.json --body <GarmentCode>\assets\bodies\mean_all.obj --config pipelines\garment\configs\drape_v1.json --name sleeve045_v1 --out-root <runs>\C2PR --gc-root <GarmentCode> --blender "<blender.exe>"`
 
 ## 3. 되는 것 / 안 되는 것
 
 되는 것
 - GarmentCode 패턴을 Blender로 옮겨 기준 몸에 입히고, 명세서 6장 검사를 자동으로 판정합니다(견본 1 통과).
-- 같은 입력이면 착장 좌표가 비트 단위로 같습니다. C2, C3, Csync에서 3번 확인했습니다.
+- 같은 입력이면 착장 좌표가 비트 단위로 같았습니다. 이 PC(Windows, i5-1135G7, Blender 5.2.3)에서 C2, C3, Csync에 걸쳐 3번 확인했습니다. 다른 PC에서도 같은지는 확인하지 않았습니다.
 - 재질·마찰·질량·시뮬레이션 값은 버전 있는 설정 파일에 있습니다. 결과에 설정 이름·버전·sha256이 남습니다.
 - 패턴 위에서 가슴·어깨·소매·기장을 재고, 목표에 맞게 디자인 파라미터를 조정합니다(가슴·소매·기장 오차 0.0 cm).
 

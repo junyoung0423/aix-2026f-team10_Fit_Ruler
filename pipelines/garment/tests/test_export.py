@@ -11,12 +11,15 @@ import pytest
 from drape_config import load_config
 
 HERE = Path(__file__).resolve().parents[1]
-GC_ROOT = Path(r'C:\dev\GarmentCode')
+GC_ROOT = Path(os.environ.get('FIT_RULER_GC_ROOT') or r'C:\dev\GarmentCode')
 SPEC = HERE / 'fixtures' / 'tee_gc_default' / 't-shirt__261103-16-24-09_specification.json'
 BODY = GC_ROOT / 'assets' / 'bodies' / 'mean_all.obj'
 CONFIG = HERE / 'configs' / 'drape_v0.json'
 
-pytestmark = pytest.mark.skipif(not BODY.exists(), reason='GarmentCode not installed')
+# 실행은 GarmentCode 루트를 PYTHONPATH에 넣어 import한다(편집 설치 .pth만으로는 import되지 않음)
+_HAS_PYGARMENT = (GC_ROOT / 'pygarment' / '__init__.py').is_file()
+pytestmark = pytest.mark.skipif(not (BODY.exists() and _HAS_PYGARMENT),
+                                reason='GarmentCode not installed (FIT_RULER_GC_ROOT, pygarment)')
 
 PROBE = r'''
 import json, sys

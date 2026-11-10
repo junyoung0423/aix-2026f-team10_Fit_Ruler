@@ -44,6 +44,28 @@ def test_shipped_config_targets_are_repo_relative():
     assert resolved['tolerance_cm'] == 1.0  # 명세서 6장 초기 목표. 완화하지 않는다
 
 
+def test_gc_keys_resolve_against_gc_root_and_targets_against_repo(tmp_path):
+    cfg = {'body_yaml': 'assets/bodies/b.yaml', 'design_yaml': 'assets/design_params/d.yaml',
+           'targets_json': 'samples/garment_v1.json'}
+    r = pf.resolve_config(cfg, gc_root=tmp_path)
+    assert Path(r['body_yaml']) == (tmp_path / 'assets' / 'bodies' / 'b.yaml').resolve()
+    assert Path(r['design_yaml']) == (tmp_path / 'assets' / 'design_params' / 'd.yaml').resolve()
+    assert Path(r['targets_json']) == (pf.REPO_ROOT / 'samples' / 'garment_v1.json').resolve()
+
+
+def test_shipped_config_has_no_absolute_paths():
+    cfg = json.loads(CFG.read_text(encoding='utf-8'))
+    for k in pf.CFG_PATH_KEYS:
+        assert not Path(cfg[k]).is_absolute(), k
+        assert ':' not in cfg[k], k
+
+
+@pytest.mark.skipif(not (pf.DEFAULT_GC_ROOT / 'assets').is_dir(), reason='GarmentCode not installed (FIT_RULER_GC_ROOT)')
+def test_shipped_config_gc_files_exist_under_gc_root():
+    r = pf.resolve_config(json.loads(CFG.read_text(encoding='utf-8')))
+    assert Path(r['body_yaml']).is_file() and Path(r['design_yaml']).is_file()
+
+
 def test_targets_read_from_common_sample_without_change():
     cfg = pf.resolve_config(json.loads(CFG.read_text(encoding='utf-8')))
     targets, sample = pf.load_targets(cfg['targets_json'])

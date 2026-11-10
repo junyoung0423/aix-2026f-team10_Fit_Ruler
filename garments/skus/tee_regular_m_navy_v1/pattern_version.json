@@ -88,14 +88,24 @@
     "name": "pattern_fit_v0",
     "version": "0.1.0"
   },
-  "fit_config_reproduced": {
-    "path": "pipelines/garment/configs/pattern_fit_v0.json",
-    "name": "pattern_fit_v0",
-    "version": "0.1.1",
-    "sha256": "899cc43ef30b3e26c82d7d13f7dd314cfa6055124bc74807111d886723234acd",
-    "change": "targets_json 절대경로 -> 저장소 기준 상대경로만 바꿈",
-    "result": "같은 FIT_FAILED, 같은 fitted_design_params, design.yaml sha256 5ac9c363… 같음 (review Csync.md)"
-  },
+  "fit_config_reproduced": [
+    {
+      "path": "pipelines/garment/configs/pattern_fit_v0.json",
+      "name": "pattern_fit_v0",
+      "version": "0.1.1",
+      "sha256": "899cc43ef30b3e26c82d7d13f7dd314cfa6055124bc74807111d886723234acd",
+      "change": "targets_json 절대경로 -> 저장소 기준 상대경로만 바꿈",
+      "result": "같은 FIT_FAILED, 같은 fitted_design_params, design.yaml sha256 5ac9c363… 같음 (review Csync.md)"
+    },
+    {
+      "path": "pipelines/garment/configs/pattern_fit_v0.json",
+      "name": "pattern_fit_v0",
+      "version": "0.1.2",
+      "sha256": "ebd1303c2f8a45897e83e48ff0dfc217ce34dbd301cc4781a3ec7920f406dc74",
+      "change": "body_yaml·design_yaml 절대경로 -> GarmentCode 루트 기준 상대경로(--gc-root)",
+      "result": "같은 FIT_FAILED, 같은 fitted_design_params, design.yaml sha256 5ac9c363… 같음, generate 정규형 b1b31454… 같음 (review C2PR.md)"
+    }
+  ],
   "fit_time_targets_json_sha256": "cdd1e8e7606e891a0340aabe41e72c0854ac5f4c93f22094b647851873be07f1",
   "fit_time_targets_note": "2026-11-05 fit 때 쓴 C 사본(samples/garment_v1.json, PLACEHOLDER, Csync에서 버림)의 sha256",
   "created": "2026-11-05"

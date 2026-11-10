@@ -22,7 +22,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from drape_config import load_config, sha256_file  # noqa: E402
 
-DEFAULT_GC_ROOT = Path(r'C:\dev\GarmentCode')
+DEFAULT_GC_ROOT = Path(os.environ.get('FIT_RULER_GC_ROOT') or r'C:\dev\GarmentCode')
 DEFAULT_BLENDER = Path(r'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe')
 DEFAULT_OUT_ROOT = Path(r'C:\dev\fitruler_c\runs\C1')
 
