@@ -1,11 +1,24 @@
-# 계약과 핏 엔진은 B(서버와 핏 판정)가 관리한다. (명세서 15장)
-# 검토 짝: B의 API·상태는 A가, 작업 인수는 D가 확인한다.
+# 코드 오너와 검토 짝 (명세서 15장, CONTRIBUTING.md 검토 짝 표)
+#   A 화면과 사용성   — 정민  @calix070924-wq
+#   B 서버와 핏 판정  — (GitHub 아이디 확인 후 추가)
+#   C 의류와 착장 렌더 — 준영  @junyoung0423
+#   D 몸과 실사화 검증 — 동호  @dongho930
 #
-# TODO: 팀원의 GitHub 아이디를 확인해 A·C·D를 아래 항목에 추가한다.
-#   예) /contracts/  @b-user @a-user @c-user @d-user
+# 검토 짝: A↔B(API와 상태), B는 A·D, C는 D, D는 C·B.
 # 저장소에 쓰기 권한이 있는 사용자만 코드 오너로 인식된다.
+# TODO: B의 GitHub 아이디를 확인해 /contracts/, /samples/, /backend/ 에 추가한다.
+# TODO: A·D 작업 폴더가 생기면 아래에 항목을 추가한다.
 
-/contracts/   @calix070924-wq
-/samples/     @calix070924-wq
-/backend/     @calix070924-wq
-/.github/     @calix070924-wq
+# 계약은 네 명 모두 의존하므로 전원이 코드 오너다. (B 추가 예정)
+/contracts/          @calix070924-wq @junyoung0423 @dongho930
+/samples/            @calix070924-wq @junyoung0423 @dongho930
+
+# B 서버와 핏 판정 — 검토 짝 A, D (B 추가 예정)
+/backend/            @calix070924-wq @dongho930
+
+# C 의류와 착장 렌더 — 검토 짝 D
+/pipelines/garment/  @junyoung0423 @dongho930
+/garments/           @junyoung0423 @dongho930
+
+# 저장소 설정
+/.github/            @calix070924-wq @junyoung0423
